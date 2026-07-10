@@ -11,6 +11,9 @@ except ImportError:
 MENU_NAME = "EXR Layers To Action"
 MENU_GROUP = "Jiawei"
 SOCKET_VERTICAL_SPACING = 40
+ACTION_HORIZONTAL_OFFSET = 1200
+ACTION_VERTICAL_OFFSET = 450
+MEDIA_HORIZONTAL_OFFSET = 900
 
 print("Loaded exr_autocomp:", MENU_GROUP, "-", MENU_NAME)
 
@@ -302,11 +305,11 @@ def position_action_nodes(
     if source_x is None or source_y is None:
         return
 
-    action.pos_x = source_x + 1200
-    action.pos_y = source_socket_y(source)
+    action.pos_x = source_x + ACTION_HORIZONTAL_OFFSET
+    action.pos_y = source_y + ACTION_VERTICAL_OFFSET
 
     if media is not None:
-        media.pos_x = source_x + 600
+        media.pos_x = source_x + MEDIA_HORIZONTAL_OFFSET
         media_y = source_socket_y(source, source_socket)
         if source_socket is None:
             media_y = action.pos_y - (media_index * 100)
