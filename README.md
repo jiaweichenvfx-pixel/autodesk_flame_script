@@ -9,11 +9,14 @@ Autodesk Flame 2025 Batch 右键菜单脚本。
 - 读取选中 Batch `PyClipNode` 的 EXR 路径。
 - 纯 Python 解析 EXR header，不依赖 OpenEXR / OpenImageIO / exrheader。
 - UI 列出 EXR 里的所有 layer/group。
+- 支持 multipart EXR，也支持 single-part EXR 中以 `layer.R/G/B/A` 命名的 channel groups。
+- 单独的根通道 `R/G/B/A` 会自动合并显示为 `RGB` 或 `RGBA`。
 - 默认全不选，支持鼠标拖过多行连续勾选。
 - 生成一个 Action。
 - 自动把 `RGBA` 连接到 Action `Back`，用于匹配 EXR 分辨率。
 - 每个选中的 layer 创建一个 Action Media 和一个 Surface。
 - Surface 通过 media index 绑定到对应 Media，避免绑定到 background。
+- Flame socket 名匹配不区分大小写，并兼容 `RGB` / `RGBA` 名称差异。
 - 当前 blend mode 使用 Flame 默认设置；在当前测试环境里默认是 Add。
 
 ## 安装

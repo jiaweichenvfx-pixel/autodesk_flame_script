@@ -102,6 +102,76 @@ def parse_string(raw):
     return raw.rstrip(b"\x00").decode("utf-8", errors="replace")
 
 
+def channel_group_name(channel):
+    channel = str(channel).strip()
+    if not channel:
+        return None
+
+    if "." not in channel:
+        if channel.upper() in ("R", "G", "B", "A"):
+            return "__ROOT_COLOR__"
+        return channel
+
+    prefix, component = channel.rsplit(".", 1)
+    if not prefix:
+        return channel
+
+    if component.lower() in {
+        "r", "g", "b", "a",
+        "red", "green", "blue", "alpha",
+        "x", "y", "z", "u", "v",
+    }:
+        return prefix
+
+    return channel
+
+
+def group_exr_channels(channels):
+    grouped = {}
+    order = []
+
+    for raw_channel in channels:
+        channel = str(raw_channel).strip()
+        group_name = channel_group_name(channel)
+        if not group_name:
+            continue
+
+        if group_name not in grouped:
+            grouped[group_name] = []
+            order.append(group_name)
+        grouped[group_name].append(channel)
+
+    layers = []
+    for group_name in order:
+        group_channels = grouped[group_name]
+        display_name = group_name
+
+        if group_name == "__ROOT_COLOR__":
+            components = {channel.upper() for channel in group_channels}
+            display_name = "RGBA" if "A" in components else "RGB"
+
+        layers.append({
+            "name": display_name,
+            "channels": group_channels,
+        })
+
+    return layers
+
+
+def normalize_exr_layers(parts):
+    if len(parts) != 1:
+        return parts
+
+    part = parts[0]
+    grouped_layers = group_exr_channels(part.get("channels", []))
+    part_name = str(part.get("name", ""))
+
+    if part_name.startswith("part_") or len(grouped_layers) > 1:
+        return grouped_layers
+
+    return parts
+
+
 def read_exr_parts(path):
     with open(path, "rb") as handle:
         data = handle.read(8 * 1024 * 1024)
@@ -151,14 +221,25 @@ def read_exr_parts(path):
 
 def find_socket(source, layer_name):
     sockets = val(source, "output_sockets") or []
+    layer_name = str(layer_name)
+    aliases = [layer_name]
 
-    for candidate in [layer_name, layer_name + "_" + layer_name]:
-        if candidate in sockets:
-            return candidate
+    if layer_name.upper() == "RGBA":
+        aliases.append("RGB")
+    elif layer_name.upper() == "RGB":
+        aliases.append("RGBA")
 
-    for socket in sockets:
-        if socket.startswith(layer_name + "_"):
-            return socket
+    for alias in aliases:
+        candidates = [alias, alias + "_" + alias]
+        for candidate in candidates:
+            for socket in sockets:
+                if str(socket).casefold() == candidate.casefold():
+                    return socket
+
+        prefix = alias.casefold() + "_"
+        for socket in sockets:
+            if str(socket).casefold().startswith(prefix):
+                return socket
 
     return None
 
@@ -363,7 +444,7 @@ def run_exr_layers_to_action(selection=None):
         show_message("Selected Batch node is not an EXR ClipNode.")
         return None
 
-    parts = read_exr_parts(path)
+    parts = normalize_exr_layers(read_exr_parts(path))
     if not parts:
         show_message("No EXR layers were found.")
         return None
