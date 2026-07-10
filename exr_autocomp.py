@@ -10,6 +10,7 @@ except ImportError:
 
 MENU_NAME = "EXR Layers To Action"
 MENU_GROUP = "Jiawei"
+SOCKET_VERTICAL_SPACING = 40
 
 print("Loaded exr_autocomp:", MENU_GROUP, "-", MENU_NAME)
 
@@ -268,18 +269,48 @@ def node_coordinate(node, name):
     return None
 
 
-def position_action_nodes(source, action, media=None, media_index=0):
+def source_socket_y(source, source_socket=None):
+    source_y = node_coordinate(source, "pos_y")
+    if source_y is None:
+        return None
+
+    sockets = list(val(source, "output_sockets") or [])
+    if not sockets:
+        return source_y
+
+    socket_index = 0
+    if source_socket is not None:
+        for index, socket in enumerate(sockets):
+            if str(socket) == str(source_socket):
+                socket_index = index
+                break
+
+    center_index = (len(sockets) - 1) / 2.0
+    offset = (center_index - socket_index) * SOCKET_VERTICAL_SPACING
+    return int(round(source_y + offset))
+
+
+def position_action_nodes(
+    source,
+    action,
+    media=None,
+    media_index=0,
+    source_socket=None,
+):
     source_x = node_coordinate(source, "pos_x")
     source_y = node_coordinate(source, "pos_y")
     if source_x is None or source_y is None:
         return
 
     action.pos_x = source_x + 1200
-    action.pos_y = source_y
+    action.pos_y = source_socket_y(source)
 
     if media is not None:
         media.pos_x = source_x + 600
-        media.pos_y = source_y + (media_index * 100)
+        media_y = source_socket_y(source, source_socket)
+        if source_socket is None:
+            media_y = action.pos_y - (media_index * 100)
+        media.pos_y = media_y
 
 
 def unique_batch_node_name(batch, base_name):
@@ -450,9 +481,9 @@ def create_action_from_layers(source, layer_names):
     batch = get_batch()
     action = batch.create_node("Action")
     action.name = unique_batch_node_name(batch, "EXR_LAYERS_ACTION")
-    position_action_nodes(source, action)
 
     back_socket = find_socket(source, "RGBA")
+    position_action_nodes(source, action, source_socket=back_socket)
     if back_socket:
         try:
             batch.connect_nodes(source, back_socket, action, "Back")
@@ -478,6 +509,7 @@ def create_action_from_layers(source, layer_names):
             action,
             media,
             media_index=media_position_index,
+            source_socket=socket,
         )
         media_position_index += 1
         try:
