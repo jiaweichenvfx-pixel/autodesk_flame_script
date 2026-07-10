@@ -274,12 +274,34 @@ def position_action_nodes(source, action, media=None, media_index=0):
     if source_x is None or source_y is None:
         return
 
-    action.pos_x = source_x + 400
+    action.pos_x = source_x + 1200
     action.pos_y = source_y
 
     if media is not None:
-        media.pos_x = source_x + 200
+        media.pos_x = source_x + 600
         media.pos_y = source_y + (media_index * 100)
+
+
+def unique_batch_node_name(batch, base_name):
+    existing_names = set()
+
+    for node in val(batch, "nodes") or []:
+        name = val(node, "name")
+        getter = getattr(name, "get_value", None)
+        if callable(getter):
+            name = getter()
+        if name:
+            existing_names.add(str(name).casefold())
+
+    if base_name.casefold() not in existing_names:
+        return base_name
+
+    number = 2
+    while True:
+        candidate = "%s_%02d" % (base_name, number)
+        if candidate.casefold() not in existing_names:
+            return candidate
+        number += 1
 
 
 def assign_media_to_surface(surface, action):
@@ -427,7 +449,7 @@ class ExrLayerDialog(QtWidgets.QDialog):
 def create_action_from_layers(source, layer_names):
     batch = get_batch()
     action = batch.create_node("Action")
-    action.name = "EXR_LAYERS_ACTION"
+    action.name = unique_batch_node_name(batch, "EXR_LAYERS_ACTION")
     position_action_nodes(source, action)
 
     back_socket = find_socket(source, "RGBA")

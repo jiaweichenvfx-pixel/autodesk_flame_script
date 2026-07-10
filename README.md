@@ -17,7 +17,8 @@ Autodesk Flame 2025 Batch 右键菜单脚本。
 - 每个选中的 layer 创建一个 Action Media 和一个 Surface。
 - Surface 通过 media index 绑定到对应 Media，避免绑定到 background。
 - Flame socket 名匹配不区分大小写，并兼容空格、下划线、重复名称及 `RGB` / `RGBA` 名称差异。
-- Action 会放在源 EXR 节点右侧，Action Media 会放在两者之间并按层向下排列。
+- Action 会放在源 EXR 节点右侧较远位置，Action Media 会放在两者中间并按层向下排列。
+- 如果 Batch 里已有同名 Action，会自动使用 `EXR_LAYERS_ACTION_02`、`_03` 等唯一名称。
 - 当前 blend mode 使用 Flame 默认设置；在当前测试环境里默认是 Add。
 
 ## 安装
