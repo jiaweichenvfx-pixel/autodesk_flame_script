@@ -233,7 +233,10 @@ def find_socket(source, layer_name):
         candidates = [alias, alias + "_" + alias]
         for candidate in candidates:
             for socket in sockets:
-                if str(socket).casefold() == candidate.casefold():
+                if (
+                    str(socket).casefold() == candidate.casefold()
+                    or socket_key(socket) == socket_key(candidate)
+                ):
                     return socket
 
         prefix = alias.casefold() + "_"
@@ -242,6 +245,41 @@ def find_socket(source, layer_name):
                 return socket
 
     return None
+
+
+def socket_key(value):
+    return "".join(
+        character
+        for character in str(value).casefold()
+        if character.isalnum()
+    )
+
+
+def node_coordinate(node, name):
+    value = getattr(node, name, None)
+    getter = getattr(value, "get_value", None)
+    if callable(getter):
+        value = getter()
+    elif callable(value):
+        value = value()
+
+    if isinstance(value, (int, float)):
+        return value
+    return None
+
+
+def position_action_nodes(source, action, media=None, media_index=0):
+    source_x = node_coordinate(source, "pos_x")
+    source_y = node_coordinate(source, "pos_y")
+    if source_x is None or source_y is None:
+        return
+
+    action.pos_x = source_x + 400
+    action.pos_y = source_y
+
+    if media is not None:
+        media.pos_x = source_x + 200
+        media.pos_y = source_y + (media_index * 100)
 
 
 def assign_media_to_surface(surface, action):
@@ -390,6 +428,7 @@ def create_action_from_layers(source, layer_names):
     batch = get_batch()
     action = batch.create_node("Action")
     action.name = "EXR_LAYERS_ACTION"
+    position_action_nodes(source, action)
 
     back_socket = find_socket(source, "RGBA")
     if back_socket:
@@ -400,15 +439,25 @@ def create_action_from_layers(source, layer_names):
             print("RGBA -> Action Back failed:", error)
 
     count = 0
+    media_position_index = 0
+    unmatched_layers = []
 
     for name in layer_names:
         socket = find_socket(source, name)
         print("Layer:", name, "Socket:", socket)
 
         if not socket:
+            unmatched_layers.append(name)
             continue
 
         media = action.add_media()
+        position_action_nodes(
+            source,
+            action,
+            media,
+            media_index=media_position_index,
+        )
+        media_position_index += 1
         try:
             media.name = "MEDIA_" + name
         except Exception:
@@ -428,6 +477,18 @@ def create_action_from_layers(source, layer_names):
 
         if assign_media_to_surface(surface, action):
             count += 1
+
+    if unmatched_layers:
+        print("Unmatched layers:", unmatched_layers)
+        print("Available sockets:", val(source, "output_sockets") or [])
+
+    if count == 0:
+        available = val(source, "output_sockets") or []
+        show_message(
+            "No selected EXR layers matched the Flame output sockets.\n"
+            "Selected: %s\nAvailable: %s"
+            % (", ".join(layer_names), ", ".join(map(str, available)))
+        )
 
     print("Created layers:", count)
     return action
