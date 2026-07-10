@@ -11,7 +11,7 @@ except ImportError:
 MENU_NAME = "EXR Layers To Action"
 MENU_GROUP = "Jiawei"
 
-print("Loaded custom_actions_hook:", MENU_GROUP, "-", MENU_NAME)
+print("Loaded exr_autocomp:", MENU_GROUP, "-", MENU_NAME)
 
 
 def val(obj, name):

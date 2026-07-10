@@ -22,11 +22,17 @@ Autodesk Flame 2025 Batch 右键菜单脚本。
 
 ## 安装
 
-把 `custom_actions_hook.py` 复制到 Flame 会扫描的 Python 脚本目录：
+把 `exr_autocomp.py` 复制到 Flame 会扫描的 Python 脚本目录：
 
 ```bash
-cp custom_actions_hook.py /opt/Autodesk/shared/python/custom_actions_hook.py
+cp exr_autocomp.py /opt/Autodesk/shared/python/exr_autocomp.py
 rm -rf /opt/Autodesk/shared/python/__pycache__
+```
+
+如果安装过旧版，请删除旧文件，避免出现重复菜单：
+
+```bash
+rm -f /opt/Autodesk/shared/python/custom_actions_hook.py
 ```
 
 然后重启 Flame，或在 Flame 里执行 `Refresh Python Hooks`。
@@ -47,7 +53,7 @@ rm -rf /opt/Autodesk/shared/python/__pycache__
 在 Flame Python Console 里运行：
 
 ```python
-import custom_actions_hook as h
+import exr_autocomp as h
 print(h.__file__)
 print(h.get_batch_custom_ui_actions())
 ```
@@ -60,11 +66,9 @@ print(h.get_batch_custom_ui_actions())
 
 ## 注意
 
-`custom_actions_hook.py` 是 Flame 的固定 hook 入口文件名。如果你的 Flame 环境里有多个同名文件，请以 Console 里 `h.__file__` 打印出来的路径为准。
-
 如果右键菜单没有出现，通常是下面两个原因之一：
 
-- Flame 实际读取的不是你复制的那份 `custom_actions_hook.py`。
+- Flame 实际读取的不是你复制的那份 `exr_autocomp.py`。
 - 对应目录里的 `__pycache__` 还缓存着旧版本。
 
 ## 当前测试环境
